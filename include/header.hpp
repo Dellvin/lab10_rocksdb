@@ -43,9 +43,9 @@ using rocksdb::WriteBatch;
 
 class FillDataBase {
 public:
-    FillDataBase(std::string dbPath =
+    FillDataBase(std::string Path =
     "/Users/dellvin/Desktop/lab10/row_dellvin_db")
-            : dbPath(dbPath) {}
+            : dbPath(Path) {}
 
     void fill(uint64_t familiesCount = 10, uint64_t fieldsCount = 100) {
         createDB(familiesCount);
@@ -138,17 +138,17 @@ private:
         for (const auto &i : column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                           ColumnFamilyOptions()));
-        std::vector < ColumnFamilyHandle * > handles;
+        std::vector < ColumnFamilyHandle * > handle;
         s = DB::Open(DBOptions(),
-                     rowDbPath, column_fam, &handles, &rowDb);
+                     rowDbPath, column_fam, &handle, &rowDb);
         assert(s.ok());
         boost::thread_group dbGetters;
-        for (const auto &i : handles)
+        for (const auto &i : handle)
             dbGetters.create_thread(
                     boost::bind(&ConvertDataBase::rowWorker, this, i));
         dbGetters.join_all();
         // close db
-        for (auto handle : handles) {
+        for (auto handle : handle) {
             s = rowDb->DestroyColumnFamilyHandle(handle);
             assert(s.ok());
         }
