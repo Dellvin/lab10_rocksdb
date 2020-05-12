@@ -9,7 +9,7 @@
 
 #include <iostream>
 #include <string>
-#include "picosha2.h"
+#include "./picosha2.h"
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
