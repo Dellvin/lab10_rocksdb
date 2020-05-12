@@ -30,7 +30,16 @@ namespace logging = boost::log;
 
 namespace keywords = boost::log::keywords;
 
-using namespace rocksdb;
+using rocksdb::DB;
+using rocksdb::Options;
+using rocksdb::Status;
+using rocksdb::ColumnFamilyOptions;
+using rocksdb::DBOptions;
+using rocksdb::ColumnFamilyDescriptor;
+using rocksdb::ColumnFamilyHandle;
+using rocksdb::Slice;
+using rocksdb::WriteOptions;
+using rocksdb::WriteBatch;
 
 class FillDataBase {
 public:
@@ -70,7 +79,7 @@ private:
                                dbPath, &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
         // open the new one, too
-        for (const auto &i:column_families)
+        for (const auto &i : column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                 ColumnFamilyOptions()));
         std::vector < ColumnFamilyHandle * > handles;
@@ -126,7 +135,7 @@ private:
                                &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
         // open the new one, too
-        for (const auto &i:column_families)
+        for (const auto &i : column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                           ColumnFamilyOptions()));
         std::vector < ColumnFamilyHandle * > handles;
@@ -134,7 +143,7 @@ private:
                      rowDbPath, column_fam, &handles, &rowDb);
         assert(s.ok());
         boost::thread_group dbGetters;
-        for (const auto &i:handles)
+        for (const auto &i : handles)
             dbGetters.create_thread(
                     boost::bind(&ConvertDataBase::rowWorker, this, i));
         dbGetters.join_all();
@@ -176,7 +185,7 @@ private:
         // create column family
         ColumnFamilyHandle *cf;
 
-        for (const auto &i:column_families) {
+        for (const auto &i : column_families) {
             if (i != "default")
                 s = hashDb->CreateColumnFamily(ColumnFamilyOptions(), i, &cf);
             assert(s.ok());
@@ -188,14 +197,14 @@ private:
         DB::ListColumnFamilies(DBOptions(), rowDbPath, &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
         // open the new one, too
-        for (const auto &i:column_families)
+        for (const auto &i : column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                               ColumnFamilyOptions()));
         s = DB::Open(DBOptions(), hashDbPath, column_fam, &handles, &hashDb);
         assert(s.ok());
         boost::thread_group hashMakers;
         uint64_t FamilyNum = 0;
-        for (const auto &i:column_families) {
+        for (const auto &i : column_families) {
             hashMakers.create_thread(boost::bind(&ConvertDataBase::hashWorker,
                    this, i, DataBase.size(), FamilyNum));
             FamilyNum++;
