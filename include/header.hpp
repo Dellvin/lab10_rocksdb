@@ -72,7 +72,7 @@ private:
         delete db;
     }
 
-    void fillDB(uint64_t familiesCount, uint64_t fieldsCount) {
+    void fillDB(uint64_t fieldsCount) {
         // open DB with two column families
         std::vector <std::string> column_families;
         DB::ListColumnFamilies(DBOptions(),
@@ -148,8 +148,8 @@ private:
                     boost::bind(&ConvertDataBase::rowWorker, this, i));
         dbGetters.join_all();
         // close db
-        for (auto handle : handle) {
-            s = rowDb->DestroyColumnFamilyHandle(handle);
+        for (auto hand : handle) {
+            s = rowDb->DestroyColumnFamilyHandle(hand);
             assert(s.ok());
         }
         delete rowDb;
