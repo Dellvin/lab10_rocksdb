@@ -15,6 +15,9 @@
 #include <rocksdb/slice.h>
 #include <boost/thread/thread.hpp>
 #include <queue>
+#include <vector>
+#include <utility>
+#include <map>
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/sources/severity_feature.hpp>
@@ -44,10 +47,8 @@ private:
     void createDB(uint64_t familiesCount) {
         Options options;
         options.create_if_missing = true;
-
         Status s = DB::Open(options, dbPath, &db);
         assert(s.ok());
-
         ColumnFamilyHandle *cf;
         for (uint64_t i = 0; i < familiesCount; ++i) {
             // create column family
@@ -56,7 +57,6 @@ private:
             s = db->CreateColumnFamily(ColumnFamilyOptions(), familyNum, &cf);
             assert(s.ok());
         }
-
         // close DB
         s = db->DestroyColumnFamilyHandle(cf);
         assert(s.ok());
@@ -69,19 +69,15 @@ private:
         DB::ListColumnFamilies(DBOptions(),
                                dbPath, &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
-
         // open the new one, too
         for (const auto &i:column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                 ColumnFamilyOptions()));
-
         std::vector < ColumnFamilyHandle * > handles;
         Status s = DB::Open(DBOptions(),
                             dbPath, column_fam, &handles, &db);
         assert(s.ok());
-
         for (uint64_t i = 0; i < handles.size(); ++i) {
-
             for (uint64_t j = 0; j < fieldsCount; ++j) {
                 // put and get from non-default column family
                 std::string key("key");
@@ -91,7 +87,6 @@ private:
                             handles[i], key, std::to_string(j));
                 assert(s.ok());
             }
-
         }
         // close db
         for (auto handle : handles) {
@@ -119,7 +114,6 @@ public:
                     "/Users/dellvin/Desktop/lab10/hash_dellvin_db") :
             rowDbPath(fromDbPath),
             hashDbPath(std::move(toDbPath)) {}
-
     void convert() {
         getDataBase();
         setDataBase();
@@ -128,28 +122,22 @@ public:
 private:
     void getDataBase() {
         Status s;
-
         DB::ListColumnFamilies(DBOptions(), rowDbPath,
                                &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
-
         // open the new one, too
         for (const auto &i:column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                           ColumnFamilyOptions()));
-
         std::vector < ColumnFamilyHandle * > handles;
         s = DB::Open(DBOptions(),
                      rowDbPath, column_fam, &handles, &rowDb);
         assert(s.ok());
-
         boost::thread_group dbGetters;
-
         for (const auto &i:handles)
             dbGetters.create_thread(
                     boost::bind(&ConvertDataBase::rowWorker, this, i));
         dbGetters.join_all();
-
         // close db
         for (auto handle : handles) {
             s = rowDb->DestroyColumnFamilyHandle(handle);
@@ -193,23 +181,18 @@ private:
                 s = hashDb->CreateColumnFamily(ColumnFamilyOptions(), i, &cf);
             assert(s.ok());
         }
-
         // close DB
         s = hashDb->DestroyColumnFamilyHandle(cf);
         assert(s.ok());
         delete hashDb;
-
-
         DB::ListColumnFamilies(DBOptions(), rowDbPath, &column_families);
         std::vector <ColumnFamilyDescriptor> column_fam;
-
         // open the new one, too
         for (const auto &i:column_families)
             column_fam.push_back(ColumnFamilyDescriptor(i,
                               ColumnFamilyOptions()));
         s = DB::Open(DBOptions(), hashDbPath, column_fam, &handles, &hashDb);
         assert(s.ok());
-
         boost::thread_group hashMakers;
         uint64_t FamilyNum = 0;
         for (const auto &i:column_families) {
@@ -218,7 +201,6 @@ private:
             FamilyNum++;
         }
         hashMakers.join_all();
-
         for (auto handle : handles) {
             s = hashDb->DestroyColumnFamilyHandle(handle);
             assert(s.ok());
@@ -227,7 +209,6 @@ private:
     }
 
     void hashWorker(std::string familyName, uint64_t size, uint64_t FamilyNum){
-
         WriteBatch batch;
         uint64_t cellsCount = 0;
         for (uint64_t i = 0; i < size; ++i) {
